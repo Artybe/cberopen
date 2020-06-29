@@ -1,29 +1,30 @@
 "County","Last_Update","Confirmed","Deaths"
-"DC:District of Columbia",2020-06-27,10216,548
-"MD:Anne Arundel",2020-06-27,5050,206
-"MD:Baltimore",2020-06-27,7822,465
-"MD:Calvert",2020-06-27,409,26
-"MD:Carroll",2020-06-27,1106,110
-"MD:Cecil",2020-06-27,474,29
-"MD:Charles",2020-06-27,1364,86
-"MD:Dorchester",2020-06-27,183,5
-"MD:Frederick",2020-06-27,2472,117
-"MD:Harford",2020-06-27,1093,61
-"MD:Howard",2020-06-27,2495,85
-"MD:Montgomery",2020-06-27,14559,734
-"MD:Prince George's",2020-06-27,18823,677
-"MD:Washington",2020-06-27,684,26
-"VA:Albemarle",2020-06-27,382,8
-"VA:Arlington",2020-06-27,2454,132
-"VA:Carroll",2020-06-27,203,8
-"VA:Culpeper",2020-06-27,807,10
-"VA:Fairfax",2020-06-27,13728,468
-"VA:Fauquier",2020-06-27,417,6
-"VA:Frederick",2020-06-27,479,5
-"VA:Henrico",2020-06-27,2560,141
-"VA:Loudoun",2020-06-27,3890,86
-"VA:Montgomery",2020-06-27,126,2
-"VA:Prince William",2020-06-27,7166,139
-"VA:Stafford",2020-06-27,974,5
-"VA:Washington",2020-06-27,63,4
-"VA:Westmoreland",2020-06-27,100,2
+"DC:District of Columbia",2020-06-28,10248,550
+"MD:Anne Arundel",2020-06-28,5063,207
+"MD:Baltimore",2020-06-28,7869,467
+"MD:Calvert",2020-06-28,411,26
+"MD:Carroll",2020-06-28,1107,111
+"MD:Cecil",2020-06-28,474,29
+"MD:Charles",2020-06-28,1373,86
+"MD:Dorchester",2020-06-28,185,5
+"MD:Frederick",2020-06-28,2478,117
+"MD:Harford",2020-06-28,1099,61
+"MD:Howard",2020-06-28,2506,85
+"MD:Montgomery",2020-06-28,14646,735
+"MD:Prince George's",2020-06-28,18896,678
+"MD:Washington",2020-06-28,694,26
+"VA:Albemarle",2020-06-28,393,8
+"VA:Arlington",2020-06-28,2464,132
+"VA:Carroll",2020-06-28,206,8
+"VA:Culpeper",2020-06-28,808,10
+"VA:Fairfax",2020-06-28,13778,473
+"VA:Fauquier",2020-06-28,417,6
+"VA:Frederick",2020-06-28,488,5
+"VA:Henrico",2020-06-28,2579,141
+"VA:Loudoun",2020-06-28,3932,87
+"VA:Montgomery",2020-06-28,136,2
+"VA:Prince William",2020-06-28,7204,139
+"VA:Stafford",2020-06-28,983,5
+"VA:Washington",2020-06-28,63,4
+"VA:Westmoreland",2020-06-28,104,2
+"AllCounties",2020-06-28,100604,4205
