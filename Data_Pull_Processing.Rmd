@@ -98,6 +98,9 @@ deaths[nrow(deaths)+1,] = c("AllCounties", colSums(deaths[, -1]))
 cases[,c(2:ncol(cases))] <- sapply(cases[,c(2:ncol(cases))],as.numeric)
 deaths[,c(2:ncol(deaths))] <- sapply(deaths[,c(2:ncol(deaths))],as.numeric)
 
+cases <- cases[,-(ncol(cases))]
+deaths <- deaths[,-(ncol(deaths))]
+
 #Latest cumulative days
 latest <- cbind(data[,6], data[,c(1:3)])
 names(latest) <- c("County", "Last_Update", "Confirmed", "Deaths")
