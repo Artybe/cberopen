@@ -85,8 +85,8 @@ st <- as.Date("2020-03-07")
 end <- today()
 dates <- as.character(seq(st, end, "days"))
 
-names(cases) <- c("county", dates)
-names(deaths) <- c("county", dates)
+names(cases) <- c("County", dates)
+names(deaths) <- c("County", dates)
 
 cases[is.na(cases)] <- 0
 deaths[is.na(deaths)] <- 0
@@ -95,12 +95,26 @@ deaths[is.na(deaths)] <- 0
 cases[nrow(cases)+1,] = c("AllCounties", colSums(cases[, -1]))
 deaths[nrow(deaths)+1,] = c("AllCounties", colSums(deaths[, -1]))
 
+cases[,c(2:ncol(cases))] <- sapply(cases[,c(2:ncol(cases))],as.numeric)
+deaths[,c(2:ncol(deaths))] <- sapply(deaths[,c(2:ncol(deaths))],as.numeric)
+
 #Latest cumulative days
 latest <- cbind(data[,6], data[,c(1:3)])
 names(latest) <- c("County", "Last_Update", "Confirmed", "Deaths")
 latest <- latest %>%
   group_by(County) %>%
   filter(Last_Update == max(Last_Update))
+
+latest$Confirmed <- as.numeric(latest$Confirmed)
+latest$Deaths <- as.numeric(latest$Deaths)
+
+#Create totals
+last <- latest[max(nrow(latest)),]
+last$County <- "AllCounties"
+last[,3:4] <- colSums(latest[,3:4])
+
+
+latest <- rbind(latest, last) 
 
 
 #Write out data
