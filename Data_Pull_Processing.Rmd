@@ -112,12 +112,14 @@ latest$Confirmed <- as.numeric(latest$Confirmed)
 latest$Deaths <- as.numeric(latest$Deaths)
 
 #Create totals
-last <- latest[max(nrow(latest)),]
+last <- as.data.frame(latest[max(nrow(latest)),])
 last$County <- "AllCounties"
-last[,3:4] <- colSums(latest[,3:4])
 
+last[,3:4] <- t(colSums(latest[,3:4]))
 
-latest <- rbind(latest, last) 
+latest <- as.data.frame(bind_rows(latest, last))
+latest$Last_Update <- as.Date(latest$Last_Update)
+latest$County <- as.factor(latest$County)
 
 
 #Write out data
