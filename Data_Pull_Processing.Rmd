@@ -19,17 +19,24 @@ library(dplyr)
 county_data <- read.csv("https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv", stringsAsFactors = FALSE)
 
 #County list provided by FDA Operations. Filtered to unique occurances of county names reporting to White Oak
-FDA_county_list <- read.xlsx("ZipsSimple.xlsx", sheetIndex = 2)
+FDA_county_list <- read.xlsx("ZipsSimple.xlsx", sheetIndex = 3)
 
 data <- county_data %>%
   filter(county %in% FDA_county_list$county) %>%
-  filter(state %in% c("Maryland", "Virginia", "District of Columbia"))
+  filter(state  %in% c("Maryland", "Virginia", "District of Columbia"))
 
 rm(county_data, FDA_county_list)
 
 lct <- Sys.getlocale("LC_TIME"); Sys.setlocale("LC_TIME", "C")
 Sys.setlocale("LC_TIME", lct)
 rm(lct)
+
+#Removing these counties from VA that have the same name of commuting counties from MD
+data <- data %>%
+   filter(!((state == "Virginia" & county == "Carroll") | 
+            (state == "Virginia" & county == "Montgomery") |
+            (state == "Virginia" & county == "Washington") |
+            (state == "Virginia" & county == "Caroline")))
 
 data$date <- as.Date(data$date)
 
@@ -54,7 +61,7 @@ data$daily_cases <- ifelse(is.na(data$daily_cases) == TRUE | data$daily_cases <0
 
 #Create Daily Deaths
 data$daily_deaths <- data$deaths - lag(data$deaths)
-data$daily_deaths <- ifelse(is.na(data$daily_deaths) == TRUE | data$daily_deaths <0, data$deaths, data$daily_deaths)
+data$daily_deaths <- ifelse(is.na(data$daily_deaths) == TRUE | data$daily_deaths <0, 0, data$daily_deaths)
 
 write.csv(data, "Z:/OBE-Risk/Research/COVID19/Open_CBER/Data/Long_DC_MD_VA.csv", row.names = F)
 
