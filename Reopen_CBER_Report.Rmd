@@ -1,0 +1,184 @@
+---
+title: "Daily Report for Local COVID-19 Cases"
+author: "Prepared by CBER-OBE"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+fontsize: 12pt
+---
+
+#Add number of commuting employees from the counties included in the analysis
+
+```{r, echo = FALSE, message = FALSE, warning=FALSE}
+#Import/process data for regression analysis
+
+library(dplyr)
+library(lattice)
+library(grid)
+library(gridExtra)
+library(kableExtra) #For PDF LaTex formatting
+library(knitr)
+library(nlme)
+
+setwd("Z:/OBE-Risk/Research/COVID19/Open_CBER/")
+
+data <- read.csv("Data/Long_DC_MD_VA.csv", stringsAsFactors = F)
+data2 <- read.csv("CountyPopulations.csv", stringsAsFactors = F)
+names(data2) <- c("state", "county", "population")
+
+data$date <- as.Date(data$date)
+data$county <- as.factor(data$county)
+
+#Filter out most recent 14 days of data
+library(lubridate)
+data <- data %>% 
+  filter(date >= today() - days(14))
+detach("package:lubridate", unload = TRUE)
+
+#Add in time variable to make regression straightforward to perform
+data <- data %>%
+   group_by(county) %>% 
+   mutate(time = row_number())
+
+data <- merge(data, data2, by.x = c("county", "state"))
+data$caserate100K <- (data$daily_cases / data$population) * 100000
+
+rm(data2)
+
+#Concatenate state/county names to make sure county names present in multiple states get included in analysis
+data$st_cnty <- as.factor(paste(data$state, data$county, sep=":"))
+
+
+#Parse out data by state to ease plotting by county within each state (some states have counties with same name)
+MD <- data %>%
+  filter(state == "MD")
+
+DC <- data %>%
+  filter(state == "DC")
+
+VA <- data %>%
+  filter(state == "VA")
+
+#Generate trend analyses using linear mixed effects model on the county-level data
+
+cntrl <- lmeControl(maxIter = 100000,
+                    msTol = 1e-6,
+                    tolerance = 1e-6,
+                    niterEM = 1000,
+                    returnObject = TRUE)
+
+casemod <- lme(fixed = daily_cases ~ time,
+               data = data,
+               random = ~ time|county,
+               control = cntrl,
+               method="REML")
+
+sumdat <- casemod$coefficients
+
+lmfits <- lmList(caserate100K ~ time | st_cnty, data=data)
+
+cfs <- as.data.frame(coef(lmfits))
+names(cfs) <- c("Intercept", "Slope")
+
+```
+
+This document serves to inform CBER leadership of the local trends of COVID-19 cases in the `r nlevels(data$st_cnty)` counties that represents the commuting areas of employees to the FDA White Oak campus. This document is dynamically generated daily.
+  
+  
+
+The local trends of COVID-19 cases can be found in the plots below, which represent linear regressions using OLS parameter estimates on the most recent 14-days of data provided by the NY Times. The daily reported cases for each county have been normalized to reflect cases per 100,000 individuals. The unweighted trend of cases from all included commuting counties to White Oak is:  
+
+$\vspace{0.01cm}$
+
+**`r sumdat$fixed[2]`** cases per 100,000 individuals per day,  
+$\vspace{0.01cm}$
+
+This suggests a **`r ifelse(sumdat$fixed[2] > 0, "positive", "negative") `** trend for the daily number of cases for the aggregated data.  
+$\vspace{0.01cm}$
+
+The overall linear trend for each county is provided in the table below with \textcolor{red}{red} and \textcolor{blue}{blue} colors representing \textcolor{red}{increasing} and \textcolor{blue}{decreasing} trends over the last 14 days, respectively.
+
+```{r, echo = FALSE, message = FALSE, warning=FALSE} 
+
+color.red <- which(cfs$Slope >0)
+color.blue <- which(cfs$Slope <0)
+
+cfs %>% 
+  kable(booktabs = T) %>%
+  kable_styling(font_size = 10) %>%
+  row_spec(color.red, bold = F, color = "#d7191c") %>%
+  row_spec(color.blue, bold = F, color = "#2c7bb6")
+
+```
+
+
+```{r, echo = FALSE, message = FALSE, warning=FALSE}
+
+write.csv(cfs, "Data/County_Linear_Regression.csv")
+
+```
+
+
+
+
+```{r, echo = FALSE, message = FALSE, warning=FALSE}
+
+cfs$positive <- ifelse(cfs$Slope >= 0, 1, 0)
+cfs$negative <- ifelse(cfs$Slope <= 0, 1, 0)
+
+```
+
+
+The linear regression slopes can be interpreted as the 14-day trend of new cases. `r sum(cfs$positive) ` out of `r nlevels(data$st_cnty)` have an increased trend in number of cases, while `r  sum(cfs$negative) ` out of `r nlevels(data$st_cnty)` have a negative trend over the same period
+
+\newpage
+
+```{r, echo = FALSE, message = FALSE, warning=FALSE, results='hide', fig.width=8, fig.height=10}
+
+#pdf("County_Plots_Daily_Cases.pdf", paper='USr', width = 8.5, height = 11)
+xyplot(caserate100K ~ date | factor(county) + factor(state), 
+       data=MD, pch=19,
+       main="Daily Regional Case Rate per 100,000 in Maryland", 
+       xlab="Date",  
+       ylab="Daily Cases per 100,000",
+       layout=c(3,4),type=c("p","g","r"),
+       as.table = TRUE)
+
+xyplot(caserate100K ~ date | factor(county) + factor(state), 
+       data= VA, pch=19,
+       main="Daily Regional Case Rate per 100,000 in Virginia", 
+       xlab="Date",  
+       ylab="Daily Cases per 100,000",
+       layout=c(3,4),type=c("p","g","r"),
+       as.table = TRUE)
+#dev.off()
+
+```
+
+
+```{r, echo = FALSE, message = FALSE, warning=FALSE, results='hide', fig.width=7, fig.height=10}
+
+DC_plot <- xyplot(caserate100K ~ date, 
+       data=DC, pch=19,
+       main=c("District of Columbia"), 
+       xlab="Date",  
+       ylab="Daily Cases per 100,000",
+       type=c("p","g", "r"))
+
+AllC_plot <- xyplot(caserate100K ~ date, 
+       data=data, pch=19,
+       main="All-County Cases", 
+       xlab="Date",  
+       ylab="Daily Cases per 100,000",
+       type=c("p","g", "r"))
+
+grid.arrange(DC_plot, AllC_plot, nrow = 2)
+
+```
+
+
+
+
+
