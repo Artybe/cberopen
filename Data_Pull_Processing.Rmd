@@ -1,0 +1,140 @@
+---
+title: "Open_CBER Data Pull"
+author: "Artur A Belov"
+date: "June 26, 2020"
+output: html_document
+---
+
+
+Data Pull
+
+```{r}
+
+setwd("Z:/OBE-Risk/Research/COVID19/Open_CBER/Employee_ZipsGetCounties/")
+
+library(xlsx)
+library(dplyr)
+
+#Pull county data from NYTimes github
+county_data <- read.csv("https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv", stringsAsFactors = FALSE)
+
+#County list provided by FDA Operations. Filtered to unique occurances of county names reporting to White Oak
+FDA_county_list <- read.xlsx("ZipsSimple.xlsx", sheetIndex = 3)
+
+data <- county_data %>%
+  filter(county %in% FDA_county_list$county) %>%
+  filter(state  %in% c("Maryland", "Virginia", "District of Columbia"))
+
+rm(county_data, FDA_county_list)
+
+lct <- Sys.getlocale("LC_TIME"); Sys.setlocale("LC_TIME", "C")
+Sys.setlocale("LC_TIME", lct)
+rm(lct)
+
+#Removing these counties from VA that have the same name of commuting counties from MD
+data <- data %>%
+   filter(!((state == "Virginia" & county == "Carroll") | 
+            (state == "Virginia" & county == "Montgomery") |
+            (state == "Virginia" & county == "Washington") |
+            (state == "Virginia" & county == "Caroline")))
+
+data$date <- as.Date(data$date)
+
+```
+
+
+"Long" Formatted Data (for Regression)
+
+```{r}
+
+attach(data)
+data <- data[order(state, county, date),]
+detach(data)
+
+data$state <- gsub("Maryland", "MD", data$state)  
+data$state <- gsub("Virginia", "VA", data$state) 
+data$state <- gsub("District of Columbia", "DC", data$state) 
+
+#Create Daily Cases
+data$daily_cases <- data$cases - lag(data$cases)
+data$daily_cases <- ifelse(is.na(data$daily_cases) == TRUE | data$daily_cases <0, 0, data$daily_cases)
+
+#Create Daily Deaths
+data$daily_deaths <- data$deaths - lag(data$deaths)
+data$daily_deaths <- ifelse(is.na(data$daily_deaths) == TRUE | data$daily_deaths <0, 0, data$daily_deaths)
+
+write.csv(data, "Z:/OBE-Risk/Research/COVID19/Open_CBER/Data/Long_DC_MD_VA.csv", row.names = F)
+
+```
+
+
+"Wide" Formatted Data (for Dashboard)
+
+```{r}
+
+data$st_cnty <- cat(data$state, data$county)
+
+data$st_cnty <- paste(data$state, data$county, sep=":")
+data <- data[,-c(2:4)]
+
+cases <- data[,c(1,2,6)]
+deaths <- data[,c(1,3,6)]
+
+names(cases) <- c("date", "cases", "county")
+names(deaths) <- c("date", "deaths", "county")
+
+
+cases <- reshape(cases, idvar = "county", timevar = "date", direction = "wide")
+deaths <- reshape(deaths, idvar = "county", timevar = "date", direction = "wide")
+
+library(lubridate)
+st <- as.Date("2020-03-07")
+end <- today()
+dates <- as.character(seq(st, end, "days"))
+
+names(cases) <- c("County", dates)
+names(deaths) <- c("County", dates)
+
+cases[is.na(cases)] <- 0
+deaths[is.na(deaths)] <- 0
+
+
+cases[nrow(cases)+1,] = c("AllCounties", colSums(cases[, -1]))
+deaths[nrow(deaths)+1,] = c("AllCounties", colSums(deaths[, -1]))
+
+cases[,c(2:ncol(cases))] <- sapply(cases[,c(2:ncol(cases))],as.numeric)
+deaths[,c(2:ncol(deaths))] <- sapply(deaths[,c(2:ncol(deaths))],as.numeric)
+
+cases <- cases[,-(ncol(cases))]
+deaths <- deaths[,-(ncol(deaths))]
+
+#Latest cumulative days
+latest <- cbind(data[,6], data[,c(1:3)])
+names(latest) <- c("County", "Last_Update", "Confirmed", "Deaths")
+latest <- latest %>%
+  group_by(County) %>%
+  filter(Last_Update == max(Last_Update))
+
+latest$Confirmed <- as.numeric(latest$Confirmed)
+latest$Deaths <- as.numeric(latest$Deaths)
+
+#Create totals
+last <- as.data.frame(latest[max(nrow(latest)),])
+last$County <- "AllCounties"
+
+last[,3:4] <- t(colSums(latest[,3:4]))
+
+latest <- as.data.frame(bind_rows(latest, last))
+latest$Last_Update <- as.Date(latest$Last_Update)
+latest$County <- as.factor(latest$County)
+
+
+#Write out data
+write.csv(cases, "Z:/OBE-Risk/Research/COVID19/Open_CBER/Data/Wide_Cases_DC_MD_VA.csv", row.names = F)
+write.csv(deaths, "Z:/OBE-Risk/Research/COVID19/Open_CBER/Data/Wide_Deaths_DC_MD_VA.csv", row.names = F)
+write.csv(latest, "Z:/OBE-Risk/Research/COVID19/Open_CBER/Data/Latest_DC_MD_VA.csv", row.names = F)
+
+
+```
+
+
